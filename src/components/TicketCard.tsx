@@ -62,7 +62,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
         {statusLabel}
         {priority === "urgent" ? " · URGENT" : ""}
         {staged
-          ? ` · staged ${staged.kind}${staged.targetStationId ? ` → ${staged.targetStationId}` : ""}`
+          ? ` · staged ${staged.kind}${staged.targetStationId ? ` → ${staged.targetStationId}` : ""} · ${staged.actor}`
           : ""}
       </p>
       {canStage && !staged ? (

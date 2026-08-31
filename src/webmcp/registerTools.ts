@@ -5,7 +5,7 @@ export interface ToolRegistration {
   supported: boolean;
 }
 
-function getModelContext(): ModelContext | undefined {
+export function getModelContext(): ModelContext | undefined {
   return document.modelContext ?? navigator.modelContext;
 }
 
@@ -20,6 +20,9 @@ export async function registerTools(
   }
 
   for (const tool of tools) {
+    if (controller.signal.aborted) {
+      break;
+    }
     await modelContext.registerTool(tool, { signal: controller.signal });
   }
 

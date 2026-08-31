@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { collectPageFaults } from "./helpers";
 
 async function agent(page: Page, command: Record<string, unknown>) {
   return page.evaluate((nextCommand) => {
@@ -112,6 +113,7 @@ async function runCanonicalJourney(page: Page) {
 }
 
 test("renders the live board from the canonical fixture", async ({ page }) => {
+  const faults = collectPageFaults(page);
   await page.goto("/");
 
   await expect(page).toHaveTitle("The Pass");
@@ -119,11 +121,14 @@ test("renders the live board from the canonical fixture", async ({ page }) => {
   await expect(page.locator("article.ticket")).toHaveCount(6);
   await expect(page.getByRole("button", { name: "Approve recovery" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Reset Demo" })).toBeVisible();
+  expect(faults, faults.join("\n")).toEqual([]);
 });
 
 test("canonical stale-plan journey", async ({ page }) => {
+  const faults = collectPageFaults(page);
   await page.goto("/");
   await runCanonicalJourney(page);
+  expect(faults, faults.join("\n")).toEqual([]);
 });
 
 test("canonical journey resets cleanly ten times", async ({ page }) => {

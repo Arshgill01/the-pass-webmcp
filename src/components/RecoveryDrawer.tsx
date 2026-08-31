@@ -37,7 +37,7 @@ export function RecoveryDrawer({
         </section>
       ) : null}
 
-      {state.rejectedActions.length > 0 ? (
+      {stale && state.rejectedActions.length > 0 ? (
         <ul className="rejected-list">
           {state.rejectedActions.map((action) => (
             <li key={action.id}>
@@ -51,15 +51,7 @@ export function RecoveryDrawer({
         </ul>
       ) : null}
 
-      {staged.length === 0 && !state.committedReceipt ? (
-        <div className="empty-state">
-          <p>Staged agent actions will appear here.</p>
-          <p>
-            Approval stays unavailable until the plan matches the current state
-            version and passes validation.
-          </p>
-        </div>
-      ) : (
+      {staged.length > 0 ? (
         <ul className="staged-list">
           {staged.map((action) => (
             <li key={action.id} className="staged-item">
@@ -88,6 +80,14 @@ export function RecoveryDrawer({
             </li>
           ))}
         </ul>
+      ) : state.committedReceipt ? null : (
+        <div className="empty-state">
+          <p>Staged agent actions will appear here.</p>
+          <p>
+            Approval stays unavailable until the plan matches the current state
+            version and passes validation.
+          </p>
+        </div>
       )}
 
       {state.validation ? (

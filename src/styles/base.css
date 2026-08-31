@@ -210,13 +210,7 @@ button[aria-pressed="true"] {
 }
 
 .station.is-unavailable {
-  background: repeating-linear-gradient(
-    -45deg,
-    #1a120f,
-    #1a120f 8px,
-    #201714 8px,
-    #201714 16px
-  );
+  background: #1a1410;
 }
 
 .station > header,

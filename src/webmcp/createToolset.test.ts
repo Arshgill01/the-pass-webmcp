@@ -28,6 +28,10 @@ function installModelContext() {
 }
 
 describe("WebMCP toolset", () => {
+  afterEach(() => {
+    delete document.modelContext;
+    delete navigator.modelContext;
+  });
   it("registers inspect tools while running and aborts them on teardown", async () => {
     const tools = installModelContext();
     const store = new KitchenStore();
@@ -81,5 +85,63 @@ describe("WebMCP toolset", () => {
       currentVersion: 4,
       nextActions: [TOOL_NAMES.inspectServiceState],
     });
+  });
+
+  it("falls back to navigator.modelContext when document is unset", async () => {
+    const tools = new Map<string, { name: string }>();
+    Object.defineProperty(navigator, "modelContext", {
+      configurable: true,
+      value: {
+        registerTool: async (
+          tool: { name: string },
+          options?: { signal?: AbortSignal },
+        ) => {
+          tools.set(tool.name, tool);
+          options?.signal?.addEventListener("abort", () => {
+            tools.delete(tool.name);
+          });
+        },
+      },
+    });
+
+    const registration = await registerTools(createToolset(new KitchenStore()));
+    expect(registration.supported).toBe(true);
+    expect([...tools.keys()]).toEqual([
+      TOOL_NAMES.inspectServiceState,
+      TOOL_NAMES.inspectTicket,
+    ]);
+  });
+
+  it("never exposes human-only or optimizer tools", () => {
+    const store = new KitchenStore();
+    const names = () => createToolset(store).map((tool) => tool.name);
+    const banned = [
+      "approve_recovery",
+      "reset_demo",
+      "report_fryer",
+      "optimize",
+      "fix_everything",
+      "propose_recovery",
+    ];
+
+    expect(names().some((name) => banned.includes(name))).toBe(false);
+
+    store.dispatch({
+      type: "REPORT_FRYER_INCIDENT",
+      expectedVersion: 1,
+      actor: "human",
+    });
+    expect(names().some((name) => banned.includes(name))).toBe(false);
+    expect(names()).toContain(TOOL_NAMES.stageTicketHold);
+
+    store.dispatch({
+      type: "STAGE_HOLD",
+      ticketId: "ticket-181",
+      expectedVersion: 2,
+      reason: "Hold fries.",
+      actor: "agent",
+    });
+    expect(names()).toContain(TOOL_NAMES.validateRecovery);
+    expect(names()).not.toContain("approve_recovery");
   });
 });

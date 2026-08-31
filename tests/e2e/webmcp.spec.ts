@@ -1,161 +1,158 @@
 import { expect, test } from "@playwright/test";
+import {
+  assertNoHumanOnlyTools,
+  callTool,
+  collectPageFaults,
+  installWebMcpHost,
+  toolNames,
+  waitForTool,
+} from "./helpers";
 
-test("mock WebMCP runtime covers read, stale write, reinspect, validate, and teardown", async ({
+test("Chrome WebMCP host covers read, stale write, reinspect, validate, receipt, and teardown", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    const tools = new Map<
-      string,
-      { name: string; execute: (input?: unknown) => unknown }
-    >();
-    const modelContext = {
-      registerTool: async (
-        tool: { name: string; execute: (input?: unknown) => unknown },
-        options?: { signal?: AbortSignal },
-      ) => {
-        tools.set(tool.name, tool);
-        options?.signal?.addEventListener("abort", () => {
-          if (tools.get(tool.name) === tool) {
-            tools.delete(tool.name);
-          }
-        });
-      },
-    };
-    Object.defineProperty(document, "modelContext", {
-      configurable: true,
-      value: modelContext,
-    });
-    (
-      window as unknown as {
-        __WEBMCP_TOOLS__: typeof tools;
-      }
-    ).__WEBMCP_TOOLS__ = tools;
-  });
-
+  const faults = collectPageFaults(page);
+  await installWebMcpHost(page, "document");
   await page.goto("/");
   await expect(page.getByText("WebMCP live")).toBeVisible();
-  await page.waitForFunction(() =>
-    (
-      window as unknown as { __WEBMCP_TOOLS__?: Map<string, unknown> }
-    ).__WEBMCP_TOOLS__?.has("inspect_service_state"),
-  );
+  await waitForTool(page, "inspect_service_state");
 
-  const runningTools = await page.evaluate(() =>
-    Array.from(
-      (window as unknown as { __WEBMCP_TOOLS__: Map<string, unknown> })
-        .__WEBMCP_TOOLS__.keys(),
-    ),
-  );
-  expect(runningTools).toEqual(["inspect_service_state", "inspect_ticket"]);
+  const running = await toolNames(page);
+  expect(running).toEqual(["inspect_service_state", "inspect_ticket"]);
+  assertNoHumanOnlyTools(running);
 
   await page.getByRole("button", { name: "Report fryer unavailable" }).click();
-  await page.waitForFunction(() =>
-    (
-      window as unknown as { __WEBMCP_TOOLS__?: Map<string, unknown> }
-    ).__WEBMCP_TOOLS__?.has("stage_ticket_hold"),
-  );
+  await waitForTool(page, "stage_ticket_hold");
+  assertNoHumanOnlyTools(await toolNames(page));
 
-  const inspect = await page.evaluate(async () => {
-    const tool = (
-      window as unknown as {
-        __WEBMCP_TOOLS__: Map<string, { execute: () => unknown }>;
-      }
-    ).__WEBMCP_TOOLS__.get("inspect_service_state");
-    return tool?.execute();
+  const inspect = await callTool(page, "inspect_service_state");
+  expect(inspect).toMatchObject({ status: "ok", stateVersion: 2 });
+
+  const ticket = await callTool(page, "inspect_ticket", {
+    ticketId: "ticket-181",
   });
-  expect(inspect).toMatchObject({
+  expect(ticket).toMatchObject({
     status: "ok",
-    stateVersion: 2,
+    ticket: { id: "ticket-181", stationId: "fryer" },
   });
 
-  const accepted = await page.evaluate(async () => {
-    const tool = (
-      window as unknown as {
-        __WEBMCP_TOOLS__: Map<
-          string,
-          { execute: (input: unknown) => unknown }
-        >;
-      }
-    ).__WEBMCP_TOOLS__.get("stage_ticket_hold");
-    return tool?.execute({
-      ticketId: "ticket-181",
-      expectedVersion: 2,
-      reason: "Hold fries because the fryer is down.",
-    });
+  const accepted = await callTool(page, "stage_ticket_hold", {
+    ticketId: "ticket-181",
+    expectedVersion: 2,
+    reason: "Hold fries because the fryer is down.",
   });
   expect(accepted).toMatchObject({ status: "accepted", stateVersion: 3 });
 
+  await waitForTool(page, "undo_staged_action");
+
+  const secondHold = await callTool(page, "stage_ticket_hold", {
+    ticketId: "ticket-185",
+    expectedVersion: 3,
+    reason: "Hold potatoes while grill capacity is assessed.",
+  });
+  expect(secondHold).toMatchObject({ status: "accepted" });
+
+  const priority = await callTool(page, "stage_ticket_priority", {
+    ticketId: "ticket-187",
+    priority: "urgent",
+    expectedVersion: 4,
+    reason: "Keep the sandwich moving during the fryer outage.",
+  });
+  expect(priority).toMatchObject({ status: "accepted" });
+
   await page.getByRole("button", { name: "Keep Table 12 together" }).click();
 
-  const stale = await page.evaluate(async () => {
-    const tool = (
-      window as unknown as {
-        __WEBMCP_TOOLS__: Map<
-          string,
-          { execute: (input: unknown) => unknown }
-        >;
-      }
-    ).__WEBMCP_TOOLS__.get("stage_ticket_hold");
-    return tool?.execute({
-      ticketId: "ticket-185",
-      expectedVersion: 3,
-      reason: "Late hold after the human lock.",
-    });
+  const stale = await callTool(page, "stage_ticket_reroute", {
+    ticketId: "ticket-185",
+    targetStationId: "grill",
+    expectedVersion: 4,
+    reason: "Late reroute after the human lock.",
   });
   expect(stale).toMatchObject({
     status: "rejected_stale",
     nextActions: ["inspect_service_state"],
   });
   await expect(page.getByText("OUTDATED — NOT APPLIED").first()).toBeVisible();
+  await expect(page.getByText("Human change: Table 12 must stay together.")).toBeVisible();
 
-  const reinspect = await page.evaluate(async () => {
-    const tool = (
-      window as unknown as {
-        __WEBMCP_TOOLS__: Map<string, { execute: () => unknown }>;
-      }
-    ).__WEBMCP_TOOLS__.get("inspect_service_state");
-    return tool?.execute();
+  const reinspect = (await callTool(page, "inspect_service_state")) as {
+    stateVersion: number;
+    nextActions: string[];
+  };
+  expect(reinspect.stateVersion).toBeGreaterThan(4);
+  expect(reinspect.nextActions).toContain("inspect_service_state");
+
+  const potatoes = await page.evaluate(() =>
+    window.__THE_PASS__?.getState().stagedActions.find(
+      (action) => action.ticketId === "ticket-185",
+    ),
+  );
+  expect(potatoes?.id).toBeTruthy();
+
+  await callTool(page, "undo_staged_action", {
+    actionId: potatoes!.id,
+    expectedVersion: reinspect.stateVersion,
+    reason: "Holding potatoes would split Table 12 from the steak.",
   });
-  expect(reinspect).toMatchObject({
+
+  const reroute = await callTool(page, "stage_ticket_reroute", {
+    ticketId: "ticket-185",
+    targetStationId: "grill",
+    expectedVersion: await page.evaluate(() => window.__THE_PASS__!.getState().version),
+    reason: "Reroute crispy potatoes to grill so Table 12 stays together.",
+  });
+  expect(reroute).toMatchObject({ status: "accepted" });
+
+  await waitForTool(page, "validate_recovery");
+  const validated = await callTool(page, "validate_recovery", {
+    expectedVersion: await page.evaluate(() => window.__THE_PASS__!.getState().version),
+  });
+  expect(validated).toMatchObject({ status: "accepted" });
+  await expect(page.getByText(/Valid for v/)).toBeVisible();
+
+  const beforeApprove = await toolNames(page);
+  expect(beforeApprove).not.toContain("read_recovery_receipt");
+  assertNoHumanOnlyTools(beforeApprove);
+
+  await page.getByRole("button", { name: "Approve recovery" }).click();
+  await expect(page.getByText(/Committed receipt/)).toBeVisible();
+  await waitForTool(page, "read_recovery_receipt");
+
+  const receipt = await callTool(page, "read_recovery_receipt");
+  expect(receipt).toMatchObject({
     status: "ok",
-    stateVersion: 4,
   });
 
-  await page.evaluate(async () => {
-    const hold = (
-      window as unknown as {
-        __WEBMCP_TOOLS__: Map<
-          string,
-          { execute: (input: unknown) => unknown }
-        >;
-      }
-    ).__WEBMCP_TOOLS__.get("stage_ticket_hold");
-    await hold?.execute({
-      ticketId: "ticket-185",
-      expectedVersion: 4,
-      reason: "Hold potatoes after reinspect.",
-    });
-  });
-
-  await page.getByRole("button", { name: "Validate plan" }).click();
-  await expect(page.getByText(/Not valid for v/)).toBeVisible();
+  const committedTools = await toolNames(page);
+  expect(committedTools).toEqual([
+    "inspect_service_state",
+    "inspect_ticket",
+    "read_recovery_receipt",
+  ]);
+  assertNoHumanOnlyTools(committedTools);
 
   await page.getByRole("button", { name: "Reset Demo" }).click();
   await expect(page.getByText("v1", { exact: true })).toBeVisible();
+  await waitForTool(page, "inspect_service_state");
   await page.waitForFunction(
     () =>
-      Array.from(
-        (
-          window as unknown as { __WEBMCP_TOOLS__?: Map<string, unknown> }
-        ).__WEBMCP_TOOLS__?.keys() ?? [],
-      ).join(",") === "inspect_service_state,inspect_ticket",
+      Array.from(window.__WEBMCP_TOOLS__?.keys() ?? []).join(",") ===
+      "inspect_service_state,inspect_ticket",
   );
+  expect(await toolNames(page)).toEqual([
+    "inspect_service_state",
+    "inspect_ticket",
+  ]);
+  expect(faults, faults.join("\n")).toEqual([]);
+});
 
-  const afterReset = await page.evaluate(() =>
-    Array.from(
-      (window as unknown as { __WEBMCP_TOOLS__: Map<string, unknown> })
-        .__WEBMCP_TOOLS__.keys(),
-    ),
-  );
-  expect(afterReset).toEqual(["inspect_service_state", "inspect_ticket"]);
+test("navigator.modelContext fallback registers the same inspect tools", async ({
+  page,
+}) => {
+  await installWebMcpHost(page, "navigator");
+  await page.goto("/");
+  await expect(page.getByText("WebMCP live")).toBeVisible();
+  await waitForTool(page, "inspect_service_state");
+  const inspect = await callTool(page, "inspect_service_state");
+  expect(inspect).toMatchObject({ status: "ok", stateVersion: 1 });
 });

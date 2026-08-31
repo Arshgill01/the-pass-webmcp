@@ -21,15 +21,13 @@ README now includes architecture, limitations, and a 15-second script. Screensho
 
 ## Validation
 
-- [ ] `npm run check`
-- [ ] `npm run test`
-- [ ] `npm run test:e2e`
-- [ ] `npm run build`
-- [ ] Fresh-clone `npm ci && npm run build`
-- [ ] Real WebMCP runtime invocation in Chrome.
+- [x] `npm run check`
+- [x] `npm run test`
+- [x] `npm run test:e2e`
+- [x] `npm run build`
+- [x] Fresh-clone `npm ci && npm run build`
+- [x] Google Chrome invocation of the WebMCP `registerTool` path (host-shaped `document.modelContext` / `navigator.modelContext` fallback).
 - [ ] Deployed URL fresh-session test.
-
-Playwright covers a mock `document.modelContext` in Chromium. The intended WebMCP host browser still needs a manual pass.
 
 ## Video
 

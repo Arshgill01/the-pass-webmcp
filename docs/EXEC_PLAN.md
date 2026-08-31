@@ -14,7 +14,7 @@ Deliver a deployed, resettable WebMCP product that proves safe human-agent colla
 - [x] Milestone 2 — moving service clock and human controls.
 - [x] Milestone 3 — staged recovery and stale rejection.
 - [x] Milestone 4 — real WebMCP lifecycle and tool flow.
-- [x] Milestone 5 — canonical browser journey and product polish (local HTTPS deploy still pending).
+- [x] Milestone 5 — canonical browser journey and product polish. HTTPS host publish is blocked without Netlify login.
 - [ ] Milestone 6 — README screenshots, video, and Devpost submission (held for explicit approval).
 
 ## Milestone 1 — domain contract
@@ -76,7 +76,7 @@ Acceptance:
 - [x] tool outputs are compact and include stable reason codes;
 - [x] tool handlers call the domain commands used by UI controls;
 - [x] unsupported browsers show a non-blocking status while human UI works;
-- [x] Chromium e2e with a mock `document.modelContext` exercises read, accepted mutation, stale mutation, reinspection, validation, and teardown.
+- [x] Google Chrome e2e installs a host-shaped `document.modelContext` (and a `navigator.modelContext` fallback) and drives read, accepted mutation, stale mutation, reinspect, `validate_recovery`, `read_recovery_receipt`, and teardown. Human-only tools never register.
 
 ## Milestone 5 — finish the product
 
@@ -85,11 +85,13 @@ Acceptance:
 - [x] canonical journey succeeds ten times from Reset Demo (`tests/e2e/canonical.spec.ts`);
 - [x] first meaningful state is visible without setup;
 - [x] desktop and narrow CSS layouts are implemented and were exercised in a browser pass (desktop + ~390px);
-- [x] keyboard-visible focus and reduced-motion CSS are present;
+- [x] keyboard-visible focus, reduced-motion CSS, and a keyboard e2e for report / lock / hold / reset;
 - [x] no magic optimizer; human UI works with WebMCP off;
-- [ ] deployed HTTPS URL (Netlify config is present; publish still pending);
+- [x] fresh-session Playwright run fails the spec on page errors / console errors (React DevTools noise ignored);
+- [ ] deployed HTTPS URL — Netlify config is present; `netlify-cli status` is not logged in, so publish is blocked here;
 - [x] static fallback remains coherent when WebMCP is unavailable.
 - [x] Browser pass on 2026-08-31 confirmed the stale drawer copy (`OUTDATED — NOT APPLIED`, version mismatch, Table 12 human change, `inspect_service_state`) and both agent-attributed and human-only approval paths.
+- [x] Fresh-clone `npm ci && npm run build` succeeded.
 
 ## Milestone 6 — submission
 
@@ -112,7 +114,8 @@ Acceptance:
 - Table 12 starts **unlocked**. Ticket `keepTogether` flags mark linked multi-item tables; the expediter lock is a separate constraint. The agent's first valid plan (hold both fryer tickets) becomes invalid after the lock because steak 184 would keep cooking while potatoes 185 wait. Repair is undo-hold + reroute 185 to grill.
 - `ticket-185` crispy potatoes is the only fixture-supported fryer alternative (`fryer` + `grill`). Shoestring fries (`ticket-181`) can only hold.
 - Clock ticks and validation snapshots do not increment `version`. Stale rejections record evidence (`rejectedActions`, `staleRejection`, activity) without changing versioned kitchen facts.
-- React StrictMode double-mounts WebMCP registration. Host abort listeners must ignore stale aborts when a newer `registerTool` call owns the same name, or tools vanish while the badge still says live.
+- Host abort listeners must ignore stale aborts when a newer `registerTool` call owns the same name, or tools vanish while the badge still says live.
+- This environment has no Netlify/Vercel credentials, so a public HTTPS URL cannot be published from the agent. `netlify.toml` is ready.
 
 ## Decisions
 
@@ -123,14 +126,15 @@ Acceptance:
 - `window.__THE_PASS__` is a rehearsal/test seam for attributing agent commands without presenting an in-page optimizer.
 - Validate does not bump version; it stores a result tied to the current version. Approve is the next semantic mutation.
 - Human ticket Hold / Send to grill / Urgent buttons call the same commands as WebMCP so the board is operable without an agent host.
+- Playwright Chromium runs the full board journey. The `chrome` project runs `tests/e2e/webmcp.spec.ts` on installed Google Chrome with a host-shaped `modelContext`.
 
 ## Results and risks
 
-Current state: canonical journey implemented end to end in domain, UI, and mocked WebMCP Chromium tests.
+Current state: canonical journey implemented end to end in domain, UI, Chromium, and Google Chrome WebMCP-host tests.
 
 Primary risks remaining:
 
-- Real Chrome WebMCP (`document.modelContext` in the intended host browser) has not been exercised outside the Playwright mock.
-- No hosted HTTPS URL yet.
-- The stale rejection is readable in the recovery drawer; video/Devpost copy still needs a recording pass later.
+- A vendor WebMCP browser that injects `document.modelContext` itself has not been used; tests install a host-shaped context and call the same `registerTool` API.
+- No hosted HTTPS URL yet (no Netlify login in this environment).
+- Video/Devpost copy still needs an explicit approval pass.
 - Agent latency in a live model session can still drift versions; the expectedVersion contract is the mitigation.
