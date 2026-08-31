@@ -1,0 +1,39 @@
+---
+description: The Pass product, architecture, and execution rules
+alwaysApply: true
+---
+
+# The Pass — Cursor rules
+
+Read `AGENTS.md`, `docs/GROK_HANDOFF.md`, and the active ExecPlan before editing.
+
+## Scope lock
+
+- Build one resettable disruption: the fryer becomes unavailable for 12 minutes.
+- Use exactly four stations and the six seeded tickets until the canonical journey passes.
+- The clock must continue while the agent reasons.
+- The human UI and WebMCP tools must mutate the same store.
+- The page validates atomic agent actions. It does not expose a magic optimizer.
+- A human-only approval commits a staged recovery.
+- Do not add auth, a backend, real POS integration, multiple scenarios, settings, or generative AI inside the app.
+
+## Working style
+
+- Make the smallest vertical change and validate it before continuing.
+- Keep product logic framework-free under `src/domain/`.
+- Keep browser API code under `src/webmcp/`.
+- Do not let React components contain scheduling or version-validation logic.
+- Add or update tests whenever behavior changes.
+- Preserve the industrial KDS visual direction in `docs/DESIGN_DIRECTION.md`.
+- Update `docs/EXEC_PLAN.md` as implementation discoveries are made.
+
+## Required commands before claiming completion
+
+```bash
+npm run check
+npm run test
+npm run test:e2e
+npm run build
+```
+
+Report the exact command result. Never say a check passed unless it was run.
