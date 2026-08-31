@@ -1,6 +1,16 @@
 import { KitchenBoard } from "./components/KitchenBoard";
-import { canonicalFixture } from "./fixtures/canonical";
+import { KitchenProvider } from "./app/KitchenProvider";
+import type { KitchenStore } from "./domain/store";
 
-export function App() {
-  return <KitchenBoard fixture={canonicalFixture} />;
+interface AppProps {
+  store?: KitchenStore;
+  autoClock?: boolean;
+}
+
+export function App({ store, autoClock = true }: AppProps) {
+  return (
+    <KitchenProvider store={store} autoClock={autoClock}>
+      <KitchenBoard />
+    </KitchenProvider>
+  );
 }

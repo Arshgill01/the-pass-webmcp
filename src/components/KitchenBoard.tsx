@@ -1,79 +1,94 @@
-import type { KitchenFixture } from "../domain/types";
+import {
+  formatDuration,
+  formatServiceTime,
+  incidentRemainingMs,
+} from "../domain/clock";
+import { derivePhase } from "../domain/selectors";
+import { isApprovalLegal } from "../domain/commands";
+import type { KitchenState, ProductPhase } from "../domain/types";
+import { useKitchenState, useKitchenStore } from "../app/KitchenProvider";
+import { useWebMcpTools } from "../webmcp/useWebMcpTools";
+import { ActivityLog } from "./ActivityLog";
+import { IncidentStrip } from "./IncidentStrip";
+import { RecoveryDrawer } from "./RecoveryDrawer";
+import { StationLane } from "./StationLane";
 
-interface KitchenBoardProps {
-  fixture: KitchenFixture;
-}
+export function KitchenBoard() {
+  const store = useKitchenStore();
+  const state = useKitchenState();
+  const phase = derivePhase(state);
+  const webmcpSupported = useWebMcpTools(store, phase);
 
-export function KitchenBoard({ fixture }: KitchenBoardProps) {
   return (
     <main className="app-shell">
       <header className="topbar">
         <div>
           <h1>The Pass</h1>
-          <p>{fixture.restaurantName}</p>
+          <p>{state.restaurantName}</p>
         </div>
-        <div className="service-clock" aria-label="Service clock scaffold">
+        <div className="service-clock" aria-label="Service clock">
           <span>Service</span>
-          <time>19:42:18</time>
+          <time dateTime={formatServiceTime(state.elapsedMs)}>
+            {formatServiceTime(state.elapsedMs)}
+          </time>
+          <span className="version-chip">v{state.version}</span>
         </div>
-        <button type="button">Reset fixture</button>
+        <div className="topbar-actions">
+          <WebMcpBadge supported={webmcpSupported} phase={phase} />
+          <button
+            type="button"
+            onClick={() => store.dispatch({ type: "RESET", actor: "human" })}
+          >
+            Reset Demo
+          </button>
+        </div>
       </header>
 
-      <section className="incident-strip" aria-label="Incident status">
-        <strong>No active incident</strong>
-        <span>The canonical fryer disruption has not been implemented.</span>
-        <button type="button" disabled>
-          Report fryer unavailable
-        </button>
-      </section>
+      <IncidentStrip />
 
       <section className="workspace" aria-label="Kitchen workspace">
         <div className="station-grid">
-          {fixture.stations.map((station) => {
-            const tickets = fixture.tickets.filter(
-              (ticket) => ticket.stationId === station.id,
-            );
-
-            return (
-              <section className="station" key={station.id}>
-                <header>
-                  <h2>{station.name}</h2>
-                  <span>{tickets.length} open</span>
-                </header>
-                <div className="ticket-stack">
-                  {tickets.map((ticket) => (
-                    <article className="ticket" key={ticket.id}>
-                      <div className="ticket-heading">
-                        <strong>{ticket.displayNumber}</strong>
-                        <time>{ticket.ageMinutes}:00</time>
-                      </div>
-                      <p>{ticket.itemName}</p>
-                      <span>{ticket.tableName}</span>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+          {state.stations.map((station) => (
+            <StationLane key={station.id} station={station} />
+          ))}
         </div>
-
-        <aside className="recovery-drawer">
-          <header>
-            <h2>Recovery</h2>
-            <span>Scaffold</span>
-          </header>
-          <div className="empty-state">
-            <p>Staged agent actions will appear here.</p>
-            <p>
-              Approval stays unavailable until the plan matches the current state
-              version and passes validation.
-            </p>
-          </div>
-          <button type="button" disabled>
-            Approve recovery
-          </button>
-        </aside>
+        <RecoveryDrawer
+          canApprove={isApprovalLegal(state)}
+          remainingLabel={remainingLabel(state)}
+        />
       </section>
+
+      <ActivityLog />
+      <p className="legal-note">
+        Synthetic Friday-service fixture. Not a production KDS, POS, or
+        food-safety system.
+      </p>
     </main>
+  );
+}
+
+function remainingLabel(state: KitchenState): string | null {
+  const remaining = incidentRemainingMs(state);
+  if (remaining === null) {
+    return null;
+  }
+  return formatDuration(remaining);
+}
+
+function WebMcpBadge({
+  supported,
+  phase,
+}: {
+  supported: boolean;
+  phase: ProductPhase;
+}) {
+  return (
+    <p
+      className={supported ? "webmcp-badge" : "webmcp-badge is-offline"}
+      aria-label="WebMCP status"
+    >
+      <span>{supported ? "WebMCP live" : "WebMCP off"}</span>
+      <small>{supported ? phase.replaceAll("_", " ") : "Human controls active"}</small>
+    </p>
   );
 }
