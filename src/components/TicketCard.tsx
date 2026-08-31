@@ -92,7 +92,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
               Send to {stationLabel(stationId)}
             </button>
           ))}
-          {priority !== "urgent" ? (
+          {!blocked && priority !== "urgent" ? (
             <button
               type="button"
               onClick={() =>

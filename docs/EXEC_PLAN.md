@@ -84,11 +84,12 @@ Acceptance:
 
 - [x] canonical journey succeeds ten times from Reset Demo (`tests/e2e/canonical.spec.ts`);
 - [x] first meaningful state is visible without setup;
-- [x] desktop and narrow CSS layouts are implemented (browser visual pass pending);
+- [x] desktop and narrow CSS layouts are implemented and were exercised in a browser pass (desktop + ~390px);
 - [x] keyboard-visible focus and reduced-motion CSS are present;
 - [x] no magic optimizer; human UI works with WebMCP off;
 - [ ] deployed HTTPS URL (Netlify config is present; publish still pending);
 - [x] static fallback remains coherent when WebMCP is unavailable.
+- [x] Browser pass on 2026-08-31 confirmed the stale drawer copy (`OUTDATED — NOT APPLIED`, version mismatch, Table 12 human change, `inspect_service_state`) and both agent-attributed and human-only approval paths.
 
 ## Milestone 6 — submission
 
