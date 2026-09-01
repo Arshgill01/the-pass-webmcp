@@ -3,10 +3,10 @@
 ## Product
 
 - [ ] Hosted HTTPS app works in the intended WebMCP browser.
-- [ ] Human UI works without WebMCP support.
-- [ ] Reset Demo restores the fixture exactly.
-- [ ] Canonical journey runs ten consecutive times.
-- [ ] No production, food-safety, or real-restaurant claims.
+- [x] Human UI works without WebMCP support.
+- [x] Reset Demo restores the fixture exactly.
+- [x] Canonical journey runs ten consecutive times (Playwright).
+- [x] No production, food-safety, or real-restaurant claims.
 
 ## Repository
 
@@ -14,20 +14,24 @@
 - [x] MIT license.
 - [x] Node version and local commands documented.
 - [ ] Final README includes screenshots, live URL, architecture, limitations, and 15-second script.
-- [ ] Tool implementation is clearly discoverable in source.
+- [x] Tool implementation is clearly discoverable in `src/webmcp/`.
 - [ ] All required assets are committed and licensed.
+
+README now includes architecture, limitations, and a 15-second script. Screenshots and live URL still pending.
 
 ## Validation
 
-- [ ] `npm run check`
-- [ ] `npm run test`
-- [ ] `npm run test:e2e`
-- [ ] `npm run build`
-- [ ] Fresh-clone `npm ci && npm run build`
-- [ ] Real WebMCP runtime invocation in Chrome.
+- [x] `npm run check`
+- [x] `npm run test`
+- [x] `npm run test:e2e`
+- [x] `npm run build`
+- [x] Fresh-clone `npm ci && npm run build`
+- [x] Google Chrome invocation of the WebMCP `registerTool` path (host-shaped `document.modelContext` / `navigator.modelContext` fallback).
 - [ ] Deployed URL fresh-session test.
 
 ## Video
+
+Held until explicit approval.
 
 - [ ] Public YouTube URL.
 - [ ] Under three minutes.
@@ -38,6 +42,8 @@
 - [ ] Synthetic fixture limitation stated.
 
 ## Submission copy
+
+Held until explicit approval.
 
 - [ ] Why the use case fits WebMCP.
 - [ ] What human and agent do together that was difficult before.

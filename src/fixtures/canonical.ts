@@ -20,6 +20,8 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 11,
       status: "working",
       keepTogether: true,
+      supportedStationIds: ["grill"],
+      priority: "normal",
     },
     {
       id: "ticket-187",
@@ -30,6 +32,8 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 7,
       status: "queued",
       keepTogether: false,
+      supportedStationIds: ["grill"],
+      priority: "normal",
     },
     {
       id: "ticket-181",
@@ -40,6 +44,8 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 14,
       status: "working",
       keepTogether: true,
+      supportedStationIds: ["fryer"],
+      priority: "normal",
     },
     {
       id: "ticket-185",
@@ -50,6 +56,8 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 10,
       status: "queued",
       keepTogether: true,
+      supportedStationIds: ["fryer", "grill"],
+      priority: "normal",
     },
     {
       id: "ticket-188",
@@ -60,6 +68,8 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 5,
       status: "working",
       keepTogether: false,
+      supportedStationIds: ["cold-prep"],
+      priority: "normal",
     },
     {
       id: "ticket-190",
@@ -70,6 +80,14 @@ export const canonicalFixture: KitchenFixture = {
       ageMinutes: 2,
       status: "queued",
       keepTogether: true,
+      supportedStationIds: ["cold-prep"],
+      priority: "normal",
     },
   ],
 };
+
+export const TABLE_12 = "Table 12";
+export const TICKET_FRIES = "ticket-181";
+export const TICKET_POTATOES = "ticket-185";
+export const TICKET_STEAK = "ticket-184";
+export const TICKET_SANDWICH = "ticket-187";

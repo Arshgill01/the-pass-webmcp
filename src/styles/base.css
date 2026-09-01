@@ -48,8 +48,15 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+button[aria-pressed="true"] {
+  border-color: var(--green);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
 .app-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .topbar {
@@ -65,7 +72,8 @@ button:focus-visible {
 .topbar h1,
 .topbar p,
 .station h2,
-.recovery-drawer h2 {
+.recovery-drawer h2,
+.activity-log h2 {
   margin: 0;
 }
 
@@ -76,14 +84,18 @@ button:focus-visible {
 
 .topbar p,
 .station header span,
-.recovery-drawer header span {
+.recovery-drawer header span,
+.activity-log header span {
   margin-top: 3px;
   color: var(--muted);
   font-size: 13px;
 }
 
-.topbar > button {
+.topbar-actions {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .service-clock {
@@ -103,10 +115,42 @@ button:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+.version-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  color: var(--ink) !important;
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-size: 12px !important;
+}
+
+.webmcp-badge {
+  margin: 0;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.webmcp-badge span {
+  display: block;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.webmcp-badge small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.webmcp-badge.is-offline span {
+  color: var(--amber);
+}
+
 .incident-strip {
   min-height: 54px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   padding: 8px 18px;
@@ -114,15 +158,44 @@ button:focus-visible {
   background: #1a1814;
 }
 
+.incident-strip.is-incident_active,
+.incident-strip.is-recovery_staged {
+  box-shadow: inset 4px 0 0 var(--red);
+}
+
+.incident-strip.is-recovery_stale {
+  box-shadow: inset 4px 0 0 var(--amber);
+}
+
+.incident-strip.is-recovery_valid,
+.incident-strip.is-recovery_committed {
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+.incident-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .incident-strip span {
   color: var(--muted);
   font-size: 14px;
 }
 
+.incident-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  min-height: calc(100vh - 127px);
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 0;
+  flex: 1;
 }
 
 .station-grid {
@@ -136,9 +209,14 @@ button:focus-visible {
   border-right: 1px solid var(--line);
 }
 
+.station.is-unavailable {
+  background: #1a1410;
+}
+
 .station > header,
-.recovery-drawer > header {
-  height: 48px;
+.recovery-drawer > header,
+.activity-log > header {
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -146,8 +224,16 @@ button:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
+.station.is-unavailable > header span {
+  color: var(--red);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .station h2,
-.recovery-drawer h2 {
+.recovery-drawer h2,
+.activity-log h2 {
   font-size: 15px;
 }
 
@@ -157,12 +243,34 @@ button:focus-visible {
   padding: 10px;
 }
 
+.empty-lane {
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .ticket {
   min-height: 106px;
   padding: 10px;
   border: 1px solid #474138;
   border-radius: 7px;
   background: var(--surface);
+}
+
+.ticket.is-blocked {
+  border-color: var(--red);
+  border-left-width: 4px;
+}
+
+.ticket.is-held,
+.ticket.is-staged {
+  border-style: dashed;
+}
+
+.ticket.is-urgent .ticket-heading strong::before {
+  content: "! ";
 }
 
 .ticket-heading {
@@ -188,15 +296,35 @@ button:focus-visible {
   font-weight: 650;
 }
 
-.ticket > span {
+.ticket > span,
+.ticket-status {
   color: var(--muted);
   font-size: 13px;
+}
+
+.ticket.is-blocked .ticket-status {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.ticket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ticket-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .recovery-drawer {
   display: flex;
   flex-direction: column;
   background: var(--surface);
+  border-left: 1px solid var(--line);
 }
 
 .empty-state {
@@ -213,8 +341,174 @@ button:focus-visible {
   font-weight: 650;
 }
 
-.recovery-drawer > button {
+.stale-card {
   margin: 12px;
+  padding: 12px;
+  border: 1px solid var(--red);
+  background: #241714;
+}
+
+.stale-kicker {
+  margin: 0 0 8px;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.stale-card p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.rejected-list,
+.staged-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.rejected-list li,
+.staged-item {
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.rejected-list span {
+  display: block;
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.staged-item div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.staged-item p,
+.receipt-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.staged-meta {
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-size: 11px !important;
+}
+
+.staged-item button {
+  margin-top: 8px;
+  min-height: 32px;
+}
+
+.actor-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.actor-tag.is-human {
+  border-color: var(--amber);
+}
+
+.actor-tag.is-agent {
+  border-color: var(--green);
+}
+
+.validation,
+.receipt-card {
+  margin: 8px 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+}
+
+.validation.is-valid {
+  border-color: var(--green);
+}
+
+.validation.is-invalid {
+  border-color: var(--red);
+}
+
+.validation ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.drawer-actions {
+  margin-top: auto;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.remaining {
+  margin: 0;
+  color: var(--amber);
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+  font-size: 12px;
+}
+
+.activity-log {
+  border-top: 1px solid var(--line);
+  background: #161410;
+}
+
+.activity-log p,
+.activity-log ol {
+  margin: 0;
+  padding: 8px 12px 12px;
+}
+
+.activity-log ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.activity-log li {
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.activity-log li span,
+.activity-log li time {
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+}
+
+.activity-log li p {
+  margin: 6px 0 0;
+  padding: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.legal-note {
+  margin: 0;
+  padding: 8px 18px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
@@ -222,8 +516,8 @@ button:focus-visible {
     grid-template-columns: 1fr auto;
   }
 
-  .service-clock {
-    display: none;
+  .service-clock time {
+    font-size: 18px;
   }
 
   .workspace {
@@ -232,6 +526,7 @@ button:focus-visible {
 
   .recovery-drawer {
     min-height: 260px;
+    border-left: 0;
     border-top: 1px solid var(--line);
   }
 }
